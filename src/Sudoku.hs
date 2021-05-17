@@ -41,29 +41,29 @@ example =
 
     A sudoku with just blanks. |-}
 allBlankPuzzle :: Puzzle
-allBlankPuzzle = Puzzle (map (\r -> map (\m -> Nothing) [1..9]) [1..9])
+allBlankPuzzle = Puzzle (map (\r -> map (\m -> Nothing) [1..9]) [1..9])  -- creates a list of 9 lists with each containing 9 Nothing values
 
 {-| Ex 1.2
 
     Checks if sud is really a valid representation of a sudoku puzzle. |-}
 isPuzzle :: Puzzle -> Bool
 isPuzzle (Puzzle rs) = let numRows        = length rs
-                           numColsAsList  = map (length) rs
-                           isNumColsAll9s = and (map (==9) numColsAsList) in
-                       if numRows == 9 && isNumColsAll9s
+                           numColsAsList  = map (length) rs  -- creates a list where each value represents the number of values in each row
+                           isNumColsAll9s = and (map (==9) numColsAsList) in  -- gives a bool values to represent whether each row in the puzzle has 9 values
+                       if numRows == 9 && isNumColsAll9s  -- if the puzzle has 9 rows of 9 values
                        then let valuesBetween1And9 = map (\r -> map (\m -> case m of
                                                                              Just n  -> n > 0 && n < 10
-                                                                             Nothing -> True) r) rs
-                                isRowsTrue         = map (\r -> and r) valuesBetween1And9
-                            in and isRowsTrue
+                                                                             Nothing -> True) r) rs  -- creates a list of lists with bool values to represent whether each value in the puzzle lies between 1 and 9
+                                isRowsTrue         = map (\r -> and r) valuesBetween1And9  -- creates a list of bool values where True is 'all values in this row are between 1 and 9'
+                            in and isRowsTrue  -- returns True if all the values in isRowsTrue are True, meaning all values in each row are between 1 and 9
                        else False
 
 {-| Ex 1.3
 
     Checks if the puzzle is already solved, i.e. there are no blanks. |-}
 isSolved :: Puzzle -> Bool
-isSolved (Puzzle rs) = let eachRowOfNothingVals = map (\r -> all (/= Nothing) r) rs
-                       in and eachRowOfNothingVals
+isSolved (Puzzle rs) = let eachRowOfNothingVals = map (\r -> all (/= Nothing) r) rs  -- creates a list of bool values where False values mean that there are at least Nothing values in this row
+                       in and eachRowOfNothingVals  -- returns True if eachRowOfNothingVals contains all True values, saying whether there are no Nothing values in rs
 
 {-| Ex 2.1
 
@@ -71,9 +71,9 @@ isSolved (Puzzle rs) = let eachRowOfNothingVals = map (\r -> all (/= Nothing) r)
 printPuzzle :: Puzzle -> IO ()
 printPuzzle (Puzzle rs) = let puzzleAsTextForm       = map (\r -> map (\m -> case m of
                                                                                Just n  -> show n
-                                                                               Nothing -> ".") r) rs
-                              puzzleAsTextFormConcat = map (\row -> concat row) puzzleAsTextForm
-                          in putStrLn (unlines puzzleAsTextFormConcat)
+                                                                               Nothing -> ".") r) rs  -- creates of list of lists with each containing a set of characters representing a number of a value in the given puzzle or a "." as a blank
+                              puzzleAsTextFormConcat = map (\row -> concat row) puzzleAsTextForm  -- creates a list of string values where each represents a row of numbers and blanks (e.g. "136.2.784")
+                          in putStrLn (unlines puzzleAsTextFormConcat)  -- prints out the previous variable as a string where each list item seperated by a new line
 
 {-| Ex 2.2
 
@@ -83,36 +83,36 @@ readPuzzle :: FilePath -> IO Puzzle
 readPuzzle f = do content <- readFile f
                   let rs = map (\r -> map (\m -> case m of
                                                     '.' -> Nothing
-                                                    n   -> Just (digitToInt n)) r) (lines content)
+                                                    n   -> Just (digitToInt n)) r) (lines content)  -- converts the read content of printed characters into a list of rows with Maybe Int values
                       p = Puzzle rs
-                  if isPuzzle p then pure p else error "This is not a puzzle!"
+                  if isPuzzle p then pure p else error "This is not a puzzle!"  -- checks whether p is a Puzzle return it as pure Puzzle value or return an error
 
 {-| Ex 3.1
 
     Check that a block contains no duplicate values. |-}
 isValidBlock :: Block -> Bool
-isValidBlock b = let bWithoutNothingValues              = filter (/= Nothing) b
-                     bWithoutNothingValuesAndDuplicates = nub bWithoutNothingValues
-                 in (length bWithoutNothingValues == length bWithoutNothingValuesAndDuplicates)
+isValidBlock b = let bWithoutNothingValues              = filter (/= Nothing) b  -- filters out the Nothing values from the block (list)
+                     bWithoutNothingValuesAndDuplicates = nub bWithoutNothingValues  -- duplicate values are removed
+                 in (length bWithoutNothingValues == length bWithoutNothingValuesAndDuplicates)  -- returns True if there are no duplicate values in b by comparing lengths of these two lists
 
 {-| Ex 3.2
 
     Collect all blocks on a board - the rows, the columns and the squares. |-}
 blocks :: Puzzle -> [Block]
-blocks (Puzzle rs) = let columns                 = transpose rs
-                         rowsOf3s                = map (\r -> chunksOf 3 r) rs
+blocks (Puzzle rs) = let columns                 = transpose rs  -- gives the columns of this list of rows
+                         rowsOf3s                = map (\r -> chunksOf 3 r) rs  -- creates a list of lists of 3 separated groups of 3 values
                          columnsOf3s             = transpose rowsOf3s
-                         firstHalfOfblocksOf3x3  = map (\c -> concat (take 3 c)) columnsOf3s
+                         firstHalfOfBlocksOf3x3  = map (\c -> concat (take 3 c)) columnsOf3s
                          secondHalfOfBlocksOf3x3 = map (\c -> concat (take 3 (drop 3 c))) columnsOf3s
                          thirdHalfOfBlocksOf3x3  = map (\c -> concat (drop 6 c)) columnsOf3s
-                         blocksOf3x3             = firstHalfOfblocksOf3x3 ++ secondHalfOfBlocksOf3x3 ++ thirdHalfOfBlocksOf3x3
-                     in rs ++ columns ++ blocksOf3x3
+                         blocksOf3x3             = firstHalfOfBlocksOf3x3 ++ secondHalfOfBlocksOf3x3 ++ thirdHalfOfBlocksOf3x3  -- a list of lists containing 9 values that represent each block of 3 by 3 in the puzzle
+                     in rs ++ columns ++ blocksOf3x3  -- returns a list of rows, columns and blocks of 3 by 3's
 
 {-| Ex 3.3
 
     Check that all blocks in a puzzle are legal. |-}
 isValidPuzzle :: Puzzle -> Bool
-isValidPuzzle p = and (map (\b -> isValidBlock b) (blocks p))
+isValidPuzzle p = and (map (\b -> isValidBlock b) (blocks p))  -- returns True if the produced list of blocks from p are all valid
 
 {-| Ex 4.1
 
@@ -134,32 +134,32 @@ blank (Puzzle rs) = let indexesOfNothingValueInEachRow                      = ma
     new value, updates the given list with the new value at the given
     index. |-}
 (!!=) :: [a] -> (Int,a) -> [a]
-(!!=) [] (_, _) = []
-(!!=) xs (p, v) = if p >= 0 && p < length xs then (take p xs) ++ [v] ++ (drop (p + 1) xs) else xs
+(!!=) [] (_, _) = []  -- empty values = no values to be replaced
+(!!=) xs (p, v) = if p >= 0 && p < length xs then (take p xs) ++ [v] ++ (drop (p + 1) xs) else xs  -- takes all the values up to the given position and appends the new value to that and appends all the values after the given position
 
 {-| Ex 4.3
 
     `update s p v' returns a puzzle which is a copy of `s' except that
     the position `p' is updated with the value `v'. |-}
 update :: Puzzle -> Pos -> Maybe Int -> Puzzle
-update (Puzzle rs) (Pos (r,i)) v = let row             = rs !! r
-                                       rowWithNewValue = row !!= (i, v)
-                                   in Puzzle ((take r rs) ++ [rowWithNewValue] ++ (drop (r + 1) rs))
+update (Puzzle rs) (Pos (r,i)) v = let row             = rs !! r  -- get list of row given at position r
+                                       rowWithNewValue = row !!= (i, v)  -- updates the new value in the row
+                                   in Puzzle ((take r rs) ++ [rowWithNewValue] ++ (drop (r + 1) rs))  -- puzzle returned with replaced row
 
 {-| Ex 5.1
 
     Solve the puzzle. |-}
 solve :: Puzzle -> Maybe Puzzle
-solve p = if isSolved p then Just p
-          else if isPuzzle p && isValidPuzzle p
-               then let pos                                               = blank p
+solve p = if isSolved p then Just p  -- return the Puzzle if solved
+          else if isPuzzle p && isValidPuzzle p  -- checks the puzzle is legal
+               then let pos                                               = blank p  -- next blank position
                         indexOfRowInBlocks                                = case pos of Pos (r, i) -> r
                         indexOfcolumnInBlocks                             = case pos of Pos (r, i) -> i + 9
                         indexOfblockOf3x3InBlocks                         = case pos of Pos (r, i) -> if i < 3 then r + 18 else if i > 2 && i < 6 then r + 19 else r + 20
-                        allValuesToCompare                                = concat ([blocks p !! indexOfRowInBlocks] ++ [blocks p !! indexOfcolumnInBlocks] ++ [blocks p !! indexOfblockOf3x3InBlocks])
+                        allValuesToCompare                                = concat ([blocks p !! indexOfRowInBlocks] ++ [blocks p !! indexOfcolumnInBlocks] ++ [blocks p !! indexOfblockOf3x3InBlocks])  -- list of all the values associated with the current blank value
                         allValuesToCompareWithoutNothingValsAndDuplicates = nub (filter (/=Nothing) allValuesToCompare)
-                        possibleValues                                    = drop (length allValuesToCompareWithoutNothingValsAndDuplicates) (nub (allValuesToCompareWithoutNothingValsAndDuplicates ++ [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]))
-                    in solve (update p pos (head possibleValues))
+                        possibleValues                                    = drop (length allValuesToCompareWithoutNothingValsAndDuplicates) (nub (allValuesToCompareWithoutNothingValsAndDuplicates ++ [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]))  -- all values between 1 and 9 that are not the associated values
+                    in solve (update p pos (head possibleValues))  -- calls this function again with this blank position replaced with a Just value
                else Nothing
                
           
@@ -175,5 +175,5 @@ readAndSolve f = do puzzle <- readPuzzle f
 
     Checks if s1 is a solution of s2. |-}
 isSolutionOf :: Puzzle -> Puzzle -> Bool
-isSolutionOf s1 s2 = solve s2 == Just s1
+isSolutionOf s1 s2 = solve s2 == Just s1  -- returns True if s1 is the same as the returned value of solve s2
 
