@@ -1,5 +1,6 @@
 module Sudoku where
 
+import Debug.Trace
 import Data.Char (digitToInt)
 import Data.Maybe (fromJust, isJust, isNothing, listToMaybe)
 import Data.List (transpose, group, sort, elemIndex, nub)
@@ -102,10 +103,10 @@ blocks :: Puzzle -> [Block]
 blocks (Puzzle rs) = let columns                 = transpose rs  -- gives the columns of this list of rows
                          rowsOf3s                = map (\r -> chunksOf 3 r) rs  -- creates a list of lists of 3 separated groups of 3 values
                          columnsOf3s             = transpose rowsOf3s
-                         firstHalfOfBlocksOf3x3  = map (\c -> concat (take 3 c)) columnsOf3s
-                         secondHalfOfBlocksOf3x3 = map (\c -> concat (take 3 (drop 3 c))) columnsOf3s
-                         thirdHalfOfBlocksOf3x3  = map (\c -> concat (drop 6 c)) columnsOf3s
-                         blocksOf3x3             = firstHalfOfBlocksOf3x3 ++ secondHalfOfBlocksOf3x3 ++ thirdHalfOfBlocksOf3x3  -- a list of lists containing 9 values that represent each block of 3 by 3 in the puzzle
+                         firstSectionOfBlocksOf3x3  = map (\c -> concat (take 3 c)) columnsOf3s
+                         secondSectionOfBlocksOf3x3 = map (\c -> concat (take 3 (drop 3 c))) columnsOf3s
+                         thirdSectionOfBlocksOf3x3  = map (\c -> concat (drop 6 c)) columnsOf3s
+                         blocksOf3x3             = firstSectionOfBlocksOf3x3 ++ secondSectionOfBlocksOf3x3 ++ thirdSectionOfBlocksOf3x3  -- a list of lists containing 9 values that represent each block of 3 by 3 in the puzzle
                      in rs ++ columns ++ blocksOf3x3  -- returns a list of rows, columns and blocks of 3 by 3's
 
 {-| Ex 3.3
@@ -121,7 +122,7 @@ isValidPuzzle p = and (map (\b -> isValidBlock b) (blocks p))  -- returns True i
     position, you may decide yourself which one to return. |-}
 blank :: Puzzle -> Pos
 blank (Puzzle rs) = let indexesOfNothingValueInEachRow                      = map (\r -> elemIndex Nothing r) rs
-                        indexOfNothingValueInFirstRowWithANothingValue      = head (filter (/=Nothing) indexesOfNothingValueInEachRow)
+                        indexOfNothingValueInFirstRowWithANothingValue      = head (filter (/=Nothing) indexesOfNothingValueInEachRow) --trace ("indexesOfNothingValueInEachRow: "++(show indexesOfNothingValueInEachRow)) $ head (filter (/=Nothing) indexesOfNothingValueInEachRow)
                         indexOfNothingValueInFirstRowWithANothingValueAsInt = case indexOfNothingValueInFirstRowWithANothingValue of Just n -> n
                         firstIndexOfRowContainingANothingValue              = elemIndex indexOfNothingValueInFirstRowWithANothingValue indexesOfNothingValueInEachRow
                         firstIndexOfRowContainingANothingValueAsInt         = case firstIndexOfRowContainingANothingValue of Just n -> n
@@ -153,23 +154,24 @@ solve :: Puzzle -> Maybe Puzzle
 solve p = if isSolved p then Just p  -- return the Puzzle if solved
           else if isPuzzle p && isValidPuzzle p  -- checks the puzzle is legal
                then let pos                                               = blank p  -- next blank position
-                        indexOfRowInBlocks                                = case pos of Pos (r, i) -> r
-                        indexOfcolumnInBlocks                             = case pos of Pos (r, i) -> i + 9
-                        indexOfblockOf3x3InBlocks                         = case pos of Pos (r, i) -> if i < 3 then r + 18 else if i > 2 && i < 6 then r + 19 else r + 20
-                        allValuesToCompare                                = concat ([blocks p !! indexOfRowInBlocks] ++ [blocks p !! indexOfcolumnInBlocks] ++ [blocks p !! indexOfblockOf3x3InBlocks])  -- list of all the values associated with the current blank value
+                        allValuesToCompare                                = valsAroundPos pos p  -- list of all the values associated with the current blank value
                         allValuesToCompareWithoutNothingValsAndDuplicates = nub (filter (/=Nothing) allValuesToCompare)
                         possibleValues                                    = drop (length allValuesToCompareWithoutNothingValsAndDuplicates) (nub (allValuesToCompareWithoutNothingValsAndDuplicates ++ [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]))  -- all values between 1 and 9 that are not the associated values
-                    in solve (update p pos (head possibleValues))  -- calls this function again with this blank position replaced with a Just value
+                    in solve (update p pos (head possibleValues)) -- calls this function again with this blank position replaced with a Just value
                else Nothing
                
-          
+valsAroundPos :: Pos -> Puzzle -> [Maybe Int]
+valsAroundPos (Pos (r,i)) (Puzzle rs) = rs !! r ++ transpose rs !! i ++ concat bl
+        where bl | r < 3     = let b = map (\r -> take 3 r) rs in if i < 3 then take 3 b else if i < 6 then take 3 (drop 3 b) else drop 6 b
+                 | r < 6     = let b = map (\r -> take 3 (drop 3 r)) rs in if i < 3 then take 3 b else if i < 6 then take 3 (drop 3 b) else drop 6 b
+                 | otherwise = let b = map (\r -> drop 6 r) rs in if i < 3 then take 3 b else if i < 6 then take 3 (drop 3 b) else drop 6 b
 
 {-| Ex 5.2
 
     Read a puzzle and solve it. |-}
 readAndSolve :: FilePath -> IO (Maybe Puzzle)
 readAndSolve f = do puzzle <- readPuzzle f
-                    printPuzzle (fromJust (solve puzzle))
+                    return (solve puzzle)
 
 {-| Ex 5.3
 
